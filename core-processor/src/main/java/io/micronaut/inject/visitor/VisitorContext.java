@@ -29,6 +29,7 @@ import io.micronaut.inject.ast.annotation.ElementAnnotationMetadataFactory;
 import io.micronaut.inject.writer.ClassWriterOutputVisitor;
 import io.micronaut.inject.writer.GeneratedFile;
 
+import java.lang.annotation.RetentionPolicy;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
@@ -91,6 +92,30 @@ public interface VisitorContext extends MutableConvertibleValues<Object>, ClassW
      */
     @Internal
     AbstractAnnotationMetadataBuilder<?, ?> getAnnotationMetadataBuilder();
+
+    /**
+     * Resolves the default values declared by the given annotation type.
+     *
+     * @param annotationName The annotation type name
+     * @return The default values, or an empty map if the annotation type cannot be resolved
+     * @since 5.1.0
+     */
+    @Experimental
+    default Map<CharSequence, Object> getAnnotationDefaultValues(String annotationName) {
+        return getAnnotationMetadataBuilder().getAnnotationDefaultValues(annotationName);
+    }
+
+    /**
+     * Resolves the retention policy declared by the given annotation type.
+     *
+     * @param annotationName The annotation type name
+     * @return The retention policy, or {@link RetentionPolicy#RUNTIME} if the annotation type cannot be resolved
+     * @since 5.1.0
+     */
+    @Experimental
+    default RetentionPolicy getAnnotationRetentionPolicy(String annotationName) {
+        return getAnnotationMetadataBuilder().getRetentionPolicy(annotationName);
+    }
 
     /**
      * Allows printing informational messages.
@@ -340,7 +365,8 @@ public interface VisitorContext extends MutableConvertibleValues<Object>, ClassW
     enum Language {
         JAVA("Java"),
         GROOVY("Groovy"),
-        KOTLIN("Kotlin");
+        KOTLIN("Kotlin"),
+        PYTHON("Python"),;
 
         private final String displayName;
 

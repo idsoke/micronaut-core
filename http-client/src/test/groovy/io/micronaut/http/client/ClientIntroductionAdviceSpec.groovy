@@ -37,12 +37,25 @@ class ClientIntroductionAdviceSpec extends Specification {
             'spec.name': 'ClientIntroductionAdviceSpec',
     ])
 
+    void "test injection method on an abstract HTTP client"() {
+        expect:
+        server.applicationContext.getBean(SetterInjectionClient).configurationInjected
+    }
+
     void "test implement HTTP client"() {
         given:
         MyClient myService = server.applicationContext.getBean(MyClient)
 
         expect:
         myService.index() == 'success'
+    }
+
+    void "test implement private nested HTTP client"() {
+        given:
+        PrivateNestedClient client = server.applicationContext.getBean(PrivateNestedClient)
+
+        expect:
+        client.index() == 'success'
     }
 
     void "test accept type defaults to json"() {
@@ -448,6 +461,11 @@ class ClientIntroductionAdviceSpec extends Specification {
     @Requires(property = 'spec.name', value = 'ClientIntroductionAdviceSpec')
     @Client('/aop')
     static interface MyClient extends MyApi {
+    }
+
+    @Requires(property = 'spec.name', value = 'ClientIntroductionAdviceSpec')
+    @Client('/aop')
+    private static interface PrivateNestedClient extends MyApi {
     }
 
     @Client('/accept')

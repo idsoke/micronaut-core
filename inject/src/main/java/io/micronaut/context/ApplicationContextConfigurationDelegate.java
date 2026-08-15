@@ -19,6 +19,7 @@ import io.micronaut.context.env.EnvironmentNamesDeducer;
 import io.micronaut.context.env.EnvironmentPackagesDeducer;
 import io.micronaut.context.env.PropertySourcesLocator;
 import io.micronaut.core.annotation.Internal;
+import io.micronaut.core.io.ResourceLoadStrategy;
 import io.micronaut.inject.BeanConfiguration;
 import org.jspecify.annotations.Nullable;
 import io.micronaut.core.convert.MutableConversionService;
@@ -141,6 +142,11 @@ class ApplicationContextConfigurationDelegate implements ApplicationContextConfi
     }
 
     @Override
+    public ResourceLoadStrategy getConfigurationLoadingStrategy() {
+        return delegate.getConfigurationLoadingStrategy();
+    }
+
+    @Override
     public BeanResolutionTraceConfiguration getTraceConfiguration() {
         return delegate.getTraceConfiguration();
     }
@@ -188,5 +194,16 @@ class ApplicationContextConfigurationDelegate implements ApplicationContextConfi
     @Override
     public @Nullable Predicate<BeanConfiguration> beanConfiguraionsPredicate() {
         return delegate.beanConfiguraionsPredicate();
+    }
+
+    @Override
+    public BeanResolutionCustomizer beanResolutionCustomizer() {
+        return delegate.beanResolutionCustomizer();
+    }
+
+    @Override
+    @Nullable
+    public CustomScopeRegistryFactory customScopeRegistryFactory() {
+        return delegate.customScopeRegistryFactory();
     }
 }

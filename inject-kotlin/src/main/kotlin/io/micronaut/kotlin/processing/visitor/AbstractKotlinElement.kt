@@ -99,7 +99,14 @@ internal abstract class AbstractKotlinElement<T : KotlinNativeElement>(
     }
 
     override fun isPublic() = if (annotatedInfo is KSDeclaration) {
-        annotatedInfo.getVisibility() == Visibility.PUBLIC
+        // Kotlin `internal` is public on the JVM (module-wide), so Class constants and
+        // bean exposed-type references are valid from any package in the compilation.
+        // Treating only Visibility.PUBLIC as public caused incomplete $EXPOSED_TYPES for
+        // internal interfaces implemented by beans in other packages (issue #12854).
+        when (annotatedInfo.getVisibility()) {
+            Visibility.PUBLIC, Visibility.INTERNAL -> true
+            else -> false
+        }
     } else {
         false
     }
@@ -181,12 +188,20 @@ internal abstract class AbstractKotlinElement<T : KotlinNativeElement>(
         return super.getModifiers()
     }
 
-    override fun getDocumentation(parse: Boolean): Optional<String> {
-        return if (annotatedInfo is KSDeclaration) {
-            Optional.ofNullable(annotatedInfo.docString)
-        } else {
-            Optional.empty()
+    override fun getDocumentation(parse: Boolean): Optional<String> =
+        documentationText((annotatedInfo as? KSDeclaration)?.docString, parse)
+
+    /**
+     * Turns a raw KDoc string into element documentation: the verbatim string when [parse] is
+     * false, otherwise the prose description with block tags parsed out (empty description → absent).
+     */
+    protected fun documentationText(docString: String?, parse: Boolean): Optional<String> {
+        val raw = docString ?: return Optional.empty()
+        if (!parse) {
+            return Optional.of(raw)
         }
+        val description = parseKDoc(raw).description
+        return if (description.isEmpty()) Optional.empty() else Optional.of(description)
     }
 
     protected fun resolveDeclaringType(

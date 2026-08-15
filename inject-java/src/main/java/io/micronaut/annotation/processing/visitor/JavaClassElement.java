@@ -355,6 +355,19 @@ public class JavaClassElement extends AbstractTypeAwareJavaElement implements Ar
     }
 
     @Override
+    public boolean isSealed() {
+        return !classElement.getPermittedSubclasses().isEmpty();
+    }
+
+    @Override
+    public Collection<ClassElement> getPermittedSubclasses() {
+        return classElement.getPermittedSubclasses()
+            .stream()
+            .map(typeMirror -> newClassElement(typeMirror, getTypeArguments()))
+            .toList();
+    }
+
+    @Override
     public boolean isPrimitive() {
         return ClassUtils.getPrimitiveType(getName()).isPresent();
     }
@@ -489,12 +502,14 @@ public class JavaClassElement extends AbstractTypeAwareJavaElement implements Ar
             value.readAccessKind == null ? null : value.getter,
             value.writeAccessKind == null ? null : value.setter,
             value.field,
+            value.propertyAccessMember,
             propertyAnnotationMetadata,
             elementAnnotationMetadataFactory,
             value.propertyName,
-            value.readAccessKind == null ? PropertyElement.AccessKind.METHOD : PropertyElement.AccessKind.valueOf(value.readAccessKind.name()),
-            value.writeAccessKind == null ? PropertyElement.AccessKind.METHOD : PropertyElement.AccessKind.valueOf(value.writeAccessKind.name()),
+            value.readAccessKind == null ? null : PropertyElement.AccessKind.valueOf(value.readAccessKind.name()),
+            value.writeAccessKind == null ? null : PropertyElement.AccessKind.valueOf(value.writeAccessKind.name()),
             value.isExcluded,
+            value.constructorWriteAccess,
             visitorContext,
             findPropertyDoc(value));
     }
@@ -779,11 +794,26 @@ public class JavaClassElement extends AbstractTypeAwareJavaElement implements Ar
     @Override
     public List<ClassElement> getBoundGenericTypes() {
         if (typeArguments == null) {
-            return Collections.emptyList();
+            Map<String, ClassElement> typeArguments = getTypeArguments();
+            if (typeArguments.isEmpty()) {
+                return Collections.emptyList();
+            }
+            return getDeclaredGenericPlaceholders().stream()
+                .map(GenericPlaceholderElement::getVariableName)
+                .map(typeArguments::get)
+                .filter(Objects::nonNull)
+                .toList();
         }
         return typeArguments.stream()
             .map(tm -> newClassElement(tm, getTypeArguments()))
             .toList();
+    }
+
+    @Override
+    public boolean isRawType() {
+        return typeArguments != null
+            && typeArguments.isEmpty()
+            && !classElement.getTypeParameters().isEmpty();
     }
 
     @Override
